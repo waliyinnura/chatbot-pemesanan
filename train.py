@@ -1,29 +1,22 @@
 import json
-import pickle
-import random
-
-from urllib.request import urlopen
 import nltk
 import numpy
+import pickle
+import matplotlib.pyplot as plt
+
 from nltk.stem import WordNetLemmatizer
 from tensorflow.python.keras.layers import Dense, Dropout
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from patterns import responsepatterns
 
-#url = "https://api.npoint.io/019b9702bc34775fb8c8"
-#response = urlopen(url)
-# response = (open("datas/intents.json"))
-
-
-def training():
+def training(responsepatterns):
     lemmatizer = WordNetLemmatizer()
-    # intents = json.loads(response.read())
     intents = json.loads(responsepatterns.text)
     print(intents)
-    #nltk.download()
+
     words = []
-    classses = []
+    classes = []
     docs = []
     ignore_list = ['?', '!', '.', ',', "'"]
 
@@ -32,20 +25,19 @@ def training():
             word_list = nltk.word_tokenize(pattern)
             words.extend(word_list)
             docs.append((word_list, intent['tag']))
-            if intent['tag'] not in classses:
-                classses.append(intent['tag'])
+            if intent['tag'] not in classes:
+                classes.append(intent['tag'])
 
     words = [lemmatizer.lemmatize(word.lower()) for word in words if word not in ignore_list]
     words = sorted(set(words))
-    classses = sorted(set(classses))
+    classes = sorted(set(classes))
     print(words)
-    #print(classses)
-    
+
     pickle.dump(words, open("datas/words.pkl", "wb"))
-    pickle.dump(classses, open("datas/classses.pkl", "wb"))
+    pickle.dump(classes, open("datas/classes.pkl", "wb"))
 
     training = []
-    out = [0] * len(classses)
+    out = [0] * len(classes)
 
     for doc in docs:
         bag = []
@@ -58,10 +50,10 @@ def training():
                 bag.append(0)
 
         out_row = list(out)
-        out_row[classses.index((doc[1]))] = 1
+        out_row[classes.index(doc[1])] = 1
         training.append([bag, out_row])
 
-    random.shuffle(training)
+    numpy.random.shuffle(training)
     training = numpy.array(training)
 
     train_x = list(training[:, 0])
@@ -77,6 +69,33 @@ def training():
     sgd = SGD(learning_rate=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-    hist = model.fit(numpy.array(train_x), numpy.array(train_y), epochs=200, batch_size=5, verbose=1)
+    hist = model.fit(numpy.array(train_x), numpy.array(train_y), epochs=400, batch_size=5, verbose=1)
+
+    # Plot grafik akurasi
+    plt.plot(hist.history['accuracy'])
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train'], loc='upper left')
+    plt.show()
+
+    # Plot grafik loss
+    plt.plot(hist.history['loss'])
+    plt.title('Model Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train'], loc='upper left')
+    plt.show()
+
     model.save('chatbot_model.h5', hist)
+
+    # Rata-rata akurasi
+    avg_accuracy = numpy.mean(hist.history['accuracy'])
+    print("Rata-rata akurasi: ", avg_accuracy)
+
+    # Rata-rata loss
+    avg_loss = numpy.mean(hist.history['loss'])
+    print("Rata-rata loss: ", avg_loss)
+
     print("training done!")
+# training(responsepatterns)

@@ -29,9 +29,23 @@ class MyStates(StatesGroup):
     FOURTH_STATE = State()
 
 # Ambil gambar menu dari API
-data = json.loads(responsemenu.text)
-link = data['data']
-gambar = open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb')
+urlmenu = "http://localhost:3000/restoran/image"
+body = {"idRestoran":28}
+
+responsemenu = requests.post(urlmenu, json=body)
+
+if responsemenu.status_code == 200:
+    data = json.loads(responsemenu.text)
+    link = data['data']
+    print(link)
+    gambar = open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb')
+    print(gambar)
+else:
+    print(f"Error: {responsemenu.status_code}")
+    print(f"Error: {responsemenu.text}")
+# data = json.loads(responsemenu.text)
+# link = data['data']
+# gambar = open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb')
 
 ## Tombol input nomor meja
 buttonmeja1 = KeyboardButton("1")
@@ -45,6 +59,7 @@ buttonmeja6 = KeyboardButton("6")
 buttonmenu1 = KeyboardButton("nasi goreng")
 buttonmenu2 = KeyboardButton("mie goreng")
 buttonmenu3 = KeyboardButton("mie rebus")
+buttonsudah = KeyboardButton("sudah")
 
 ## Tombol input jumlah menu pesanan
 buttonjmlmenu1 = KeyboardButton("1")
@@ -65,7 +80,8 @@ keyboardnomeja = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=Tru
 keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     buttonmenu1,
     buttonmenu2,
-    buttonmenu3
+    buttonmenu3,
+    buttonsudah
     )
 
 ## Fungsi tombol jumlah pesanan
@@ -83,6 +99,14 @@ async def start(message: types.Message):
     print(start_answer)
     await message.answer(start_answer)
 
+### Menampilkan Menu lewat commands
+@dp.message_handler(commands="menu")
+async def menu(message: types.Message):
+    image = gambar
+    with open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb') as photo:
+        await bot.send_photo(message.chat.id, photo)
+        await message.answer("Ini menunya ya kak")
+
 ### Awalan untuk mulai memesan makanan
 @dp.message_handler(Command("mulai"))
 async def start(message: types.Message):
@@ -92,6 +116,17 @@ async def start(message: types.Message):
     await message.answer(start_answer)
 
 varTransaksi = None
+## Data jumlah meja
+dataJumlahMeja = 10
+jumlahMeja = {}
+
+for meja in range(dataJumlahMeja):
+    meja += 1
+    jumlahMeja[f"{meja}"] = f"Oke, kamu di meja nomor {meja} ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya"
+
+meja_response = jumlahMeja
+
+# print(jumlahMeja[int(nomor)])
 
 ### Fungsi tombol input nomor meja
 @dp.message_handler(state=MyStates.FIRST_STATE)
@@ -119,32 +154,19 @@ async def kb_nomeja(message: types.Message, state: FSMContext):
     else:
         print(f"Error: {responsemeja.status_code}")
         print(f"Error: {responsemeja.text}")
+    
+    response_meja = meja_response.get(message.text)
 
-    if message.text == "1":
+    if response_meja is not None:
         await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 1 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-    elif message.text == "2":
-        await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 2 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-    elif message.text == "3":
-        await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 3 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-    elif message.text == "4":
-        await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 4 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-    elif message.text == "5":
-        await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 5 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-    elif message.text == "6":
-        await MyStates.SECOND_STATE.set()
-        await message.reply("Oke, kamu di meja nomor 6 ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya")
-
+        await message.reply(response_meja)
 
 ### Menampilkan Menu lewat state
 @dp.message_handler(state=MyStates.SECOND_STATE)
 async def menu(message: types.Message, state: FSMContext):
     image = gambar
-    await bot.send_photo(message.chat.id, photo=image)
+    with open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb') as photo:
+        await bot.send_photo(message.chat.id, photo)
     await MyStates.THIRD_STATE.set()
     await message.answer("Ini menunya ya kak, mau pesan apa?", reply_markup=keyboardmenu)
 
