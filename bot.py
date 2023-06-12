@@ -47,13 +47,17 @@ else:
 # link = data['data']
 # gambar = open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb')
 
+for i in range(1, 7):
+    button_code = f"buttonmeja{i} = KeyboardButton('{i}')"
+    exec(button_code)
+
 ## Tombol input nomor meja
-buttonmeja1 = KeyboardButton("1")
-buttonmeja2 = KeyboardButton("2")
-buttonmeja3 = KeyboardButton("3")
-buttonmeja4 = KeyboardButton("4")
-buttonmeja5 = KeyboardButton("5")
-buttonmeja6 = KeyboardButton("6")
+#buttonmeja1 = KeyboardButton("1")
+#buttonmeja2 = KeyboardButton("2")
+#buttonmeja3 = KeyboardButton("3")
+#buttonmeja4 = KeyboardButton("4")
+#buttonmeja5 = KeyboardButton("5")
+#buttonmeja6 = KeyboardButton("6")
 
 ## Tombol input menu pesanan
 buttonmenu1 = KeyboardButton("nasi goreng")
@@ -68,12 +72,7 @@ buttonjmlmenu3 = KeyboardButton("3")
 
 ## Fungsi tombol input nomor meja
 keyboardnomeja = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
-    buttonmeja1,
-    buttonmeja2,
-    buttonmeja3,
-    buttonmeja4,
-    buttonmeja5,
-    buttonmeja6
+    *[globals()[f"buttonmeja{i}"] for i in range(1, 7)]
     )
 
 ## Fungsi tombol input menu
