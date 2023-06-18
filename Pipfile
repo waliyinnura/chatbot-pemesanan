@@ -4,11 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "*"
-nltk = "*"
-tensorflow = "*"
-keras = "*"
-aiogram = "*"
+aiogram = "==2.20"
+matplotlib = "==3.7.1"
+mysql-python = "==1.2.5"
+nltk = "==3.7"
+numpy = "==1.22.3"
+pillow = "==9.5.0"
+requests = "==2.31.0"
+telethon = "==1.26.0"
+tensorflow = "==2.9.0"
 
 [dev-packages]
 

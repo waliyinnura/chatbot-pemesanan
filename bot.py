@@ -4,7 +4,6 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Command
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import MySQLdb
 from datetime import datetime
 import logging
 from main import chat_anwser
@@ -55,14 +54,6 @@ value = dataMeja['data'][0]['jumlahMeja']
 for i in range(1, value+1):
     button_code = f"buttonmeja{i} = KeyboardButton('{i}')"
     exec(button_code)
-
-## Tombol input nomor meja
-#buttonmeja1 = KeyboardButton("1")
-#buttonmeja2 = KeyboardButton("2")
-#buttonmeja3 = KeyboardButton("3")
-#buttonmeja4 = KeyboardButton("4")
-#buttonmeja5 = KeyboardButton("5")
-#buttonmeja6 = KeyboardButton("6")
 
 ## Tombol input menu pesanan
 urlmenu = "http://localhost:3000/menu/getAllMenuIdRestoran"
