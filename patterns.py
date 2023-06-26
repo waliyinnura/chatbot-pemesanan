@@ -3,7 +3,7 @@ import json
 import pprint
 
 urlpatterns = "http://localhost:3000/patterns/intents"
-body = {"idRestoran":28}
+body = {"idRestoran":29}
 
 responsepatterns = requests.post(urlpatterns, json=body)
 
