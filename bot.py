@@ -1,19 +1,24 @@
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup,ReplyKeyboardRemove,KeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Command
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from datetime import datetime
 import logging
-from main import chat_anwser
+from main import chat_answer
 from menu import responsemenu
 import json
 import requests
+import traceback
+from config import TOKEN, RESTAURANT_ID, API_BASE_URL
 
-# logging.basicConfig(level=logging.INFO)
-
-TOKEN = "5578817522:AAEx2Ag3nE3hvsHDCPBuzTxt0JZ03U-4qak"
+# Konfigurasi logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Inisialisasi bot dan dispatcher
 bot = Bot(token=TOKEN)
@@ -28,10 +33,9 @@ class MyStates(StatesGroup):
     FOURTH_STATE = State()
 
 # Ambil gambar menu dari API
-urlmenu = "http://localhost:3000/restoran/image"
-body = {"idRestoran":29}
-
-responsemenu = requests.post(urlmenu, json=body)
+urlgmenu = f"{API_BASE_URL}/restoran/image"
+body = {"idRestoran": RESTAURANT_ID}
+responsemenu = requests.post(urlgmenu, json=body)
 
 if responsemenu.status_code == 200:
     dataMenu = json.loads(responsemenu.text)
@@ -42,120 +46,95 @@ if responsemenu.status_code == 200:
 else:
     print(f"Error: {responsemenu.status_code}")
     print(f"Error: {responsemenu.text}")
-# data = json.loads(responsemenu.text)
-# link = data['data']
-# gambar = open(f"C:\Skripsi\skripsi-api-master\image\{link}", 'rb')
 
-urlmeja = "http://localhost:3000/restoran/jumlahMeja"
-body = {"idRestoran": 29}
+## Tombol nomor meja
+urlmeja = f"{API_BASE_URL}/restoran/jumlahMeja"
+body = {"idRestoran": RESTAURANT_ID}
+
 responsemeja = requests.post(urlmeja, json=body)
 dataMeja = json.loads(responsemeja.text)
 value = dataMeja['data'][0]['jumlahMeja']
-for i in range(1, value+1):
-    button_code = f"buttonmeja{i} = KeyboardButton('{i}')"
-    exec(button_code)
+
+keyboardnomeja = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
+    *[KeyboardButton(str(i)) for i in range(1, value+1)]
+)
 
 ## Tombol input menu pesanan
-urlmenu = "http://localhost:3000/menu/getAllMenuIdRestoran"
-body = {"idRestoran": 29}
+urlmenu = f"{API_BASE_URL}/menu/getAllMenuIdRestoran"
+body = {"idRestoran": RESTAURANT_ID}
+
 responsemenu = requests.post(urlmenu, json=body)
 data = json.loads(responsemenu.text)
 menu_items = [item['nama'] for item in data['data']]
 
-keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 buttonsudah = KeyboardButton("sudah")
+keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
+    *[KeyboardButton(item) for item in menu_items],
+    buttonsudah
+)
 
-for item in menu_items:
-    print(item)
-    button = KeyboardButton(f"{item}")
-    print(button)
-    keyboardmenu.add(button)
-    if item == menu_items[-1]:
-        keyboardmenu.add(buttonsudah)
+# Ambil jumlah maksimal menu pesanan dari variabel
+max_menu = 10
 
-    
-#buttonmenu1 = KeyboardButton("nasi goreng")
-#buttonmenu2 = KeyboardButton("mie goreng")
-#buttonmenu3 = KeyboardButton("mie rebus")
+# Buat daftar tombol jumlah menu pesanan secara dinamis
+keyboardjmlmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+for i in range(1, max_menu+1):
+    button = KeyboardButton(str(i))
+    keyboardjmlmenu.add(button)
 
-
-## Tombol input jumlah menu pesanan
-buttonjmlmenu1 = KeyboardButton("1")
-buttonjmlmenu2 = KeyboardButton("2")
-buttonjmlmenu3 = KeyboardButton("3")
-
-## Fungsi tombol input nomor meja
-keyboardnomeja = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
-    *[globals()[f"buttonmeja{i}"] for i in range(1,11)]
-    )
-
-## Fungsi tombol input menu
-#keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
-#    buttonmenu1,
-#    buttonmenu2,
-#    buttonmenu3,
-#    buttonsudah
-#    )
-
-## Fungsi tombol jumlah pesanan
-keyboardjmlmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
-    buttonjmlmenu1,
-    buttonjmlmenu2,
-    buttonjmlmenu3
-    )
-
-
-### Awalan
+### Awalan akan ke NLP Mode
 @dp.message_handler(Command("start"))
 async def start(message: types.Message):
-    start_answer = "Halo! Selamat datang, disini kamu bisa tanya-tanya dulu loh cara pesannya gimana"
-    print(start_answer)
-    await message.answer(start_answer)
+    try:
+        logger.info(f"User {message.from_user.username} memulai chat")
+        start_answer = "Halo! Selamat datang, sekarang kamu sedang berada di Mode Chatting dari chatbot ini. Disini kamu bisa tanya-tanya apapun! asal masih ada hubungannya sama restoran ini ya :D"
+        print(start_answer)
+        await message.answer(start_answer)
+    except Exception as e:
+        traceback.print_exc()
+        error_message = "Terjadi kesalahan saat memulai chat"
+        await message.answer(error_message)
 
-### Menampilkan Menu lewat commands
+### Menampilkan Menu lewat commands di NLP Mode
 @dp.message_handler(commands="menu")
-async def menu(message: types.Message):
-    image = gambar
-    with open(f"C:\Skripsi\skripsi-api\image\{link}", 'rb') as photo:
-        await bot.send_photo(message.chat.id, photo)
-        await message.answer("Ini menunya ya kak")
+async def show_menu(message: types.Message):
+    try:
+        with open(f"C:\Skripsi\skripsi-api\image\{link}", 'rb') as photo:
+            await bot.send_photo(message.chat.id, photo)
+        await message.answer("Ini untuk menunya ya kak")
+    except Exception as e:
+        traceback.print_exc()
+        error_message = "Terjadi kesalahan saat menampilkan menu"
+        await message.answer(error_message)
 
-### Awalan untuk mulai memesan makanan
-@dp.message_handler(Command("mulai"))
-async def start(message: types.Message):
-    mulai_answer = "Halo kamu sekarang ada di mode untuk memesan ya. Kamu di meja berapa kak?"
-    print(mulai_answer)
-    await MyStates.FIRST_STATE.set()
-    await message.answer(mulai_answer, reply_markup=keyboardnomeja)
+### Awalan untuk mulai memesan makanan di Mode Pemesanan
+@dp.message_handler(Command("pesan"))
+async def start_order(message: types.Message):
+    try:
+        pesan_answer = "Halo kamu sekarang ada di Mode Pemesanan. Kamu sekarang duduk di meja berapa kak?"
+        print(pesan_answer)
+        await MyStates.FIRST_STATE.set()
+        await message.answer(pesan_answer, reply_markup=keyboardnomeja)
+    except Exception as e:
+        traceback.print_exc()
+        error_message = "Terjadi kesalahan saat memulai pemesanan"
+        await message.answer(error_message)
 
 varTransaksi = None
-## Data jumlah meja
-dataJumlahMeja = 10
-jumlahMeja = {}
-
-for meja in range(dataJumlahMeja):
-    meja += 1
-    jumlahMeja[f"{meja}"] = f"Oke, kamu di meja nomor {meja} ya, tekan tombol di bawah ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya"
-
-meja_response = jumlahMeja
-
-# print(jumlahMeja[int(nomor)])
 
 ### Fungsi tombol input nomor meja
 @dp.message_handler(state=MyStates.FIRST_STATE)
-async def kb_nomeja(message: types.Message, state: FSMContext):
-    #meja_answer = "Oke, kamu di meja nomor berapa kak?"
-    #await message.answer(meja_answer, reply_markup=keyboardnomeja)
-
-    urlmeja = "http://localhost:3000/transaksi/postTransaksi"
-    username = message["from"]["username"]
-    nomorMeja = message["text"]
+async def input_table_number(message: types.Message, state: FSMContext):
+    logger.info(f"User {message.from_user.username} memilih nomor meja {message.text}")
+    urlmeja = f"{API_BASE_URL}/transaksi/postTransaksi"
+    username = message.from_user.username
+    nomorMeja = message.text
     print(nomorMeja)
     body = {
         "username": username,
         "nomorMeja": int(nomorMeja),
-        "idRestoran":29
-        }
+        "idRestoran": RESTAURANT_ID
+    }
     
     global varTransaksi
     responsemeja = requests.post(urlmeja, json=body)
@@ -168,39 +147,29 @@ async def kb_nomeja(message: types.Message, state: FSMContext):
         print(f"Error: {responsemeja.status_code}")
         print(f"Error: {responsemeja.text}")
     
-    response_meja = meja_response.get(message.text)
-
-    if response_meja is not None:
-        await MyStates.SECOND_STATE.set()
-        await message.reply(response_meja)
+    meja_response = f"Oke, kamu di meja nomor {nomorMeja} ya, tekan tombol /menu ini untuk menampilkan menunya dan lanjut ke langkah selanjutnya"
+    await MyStates.SECOND_STATE.set()
+    await message.reply(meja_response)
 
 ### Menampilkan Menu lewat state
 @dp.message_handler(state=MyStates.SECOND_STATE)
-async def menu(message: types.Message, state: FSMContext):
-    image = gambar
+async def show_menu_state(message: types.Message, state: FSMContext):
     with open(f"C:\Skripsi\skripsi-api\image\{link}", 'rb') as photo:
         await bot.send_photo(message.chat.id, photo)
     await MyStates.THIRD_STATE.set()
-    await message.answer("Ini menunya ya kak, mau pesan apa?", reply_markup=keyboardmenu)
+    await message.answer("Ini untuk menunya ya kak, mau pesan apa? Silahkan tekan tombol yang tersedia ya kak", reply_markup=keyboardmenu)
 
 varidmenu = None
 
 ### Fungsi tombol input menu pesanan
 @dp.message_handler(state=MyStates.THIRD_STATE)
-async def kb_pesanmenu(message: types.Message, state: FSMContext):
+async def input_order_menu(message: types.Message, state: FSMContext):
+    logger.info(f"User {message.from_user.username} memesan menu {message.text}")
     global varTransaksi
-    await message.answer("Okeeee")
+    await message.answer("Oke siap kak!")
     idTransaksi = varTransaksi
     print("Ini idTransaksi: ", idTransaksi)
 
-    urlmenu = "http://localhost:3000/menu/getAllMenuIdRestoran"
-    body = {"idRestoran":29}
-    responsemenu = requests.post(urlmenu, json=body)
-    data = json.loads(responsemenu.text)
-    menu_items = [item['nama'] for item in data['data']]
-
-    global varidmenu
-    namaMenu = menu_items[0]  # Mengambil menu pertama sebagai default
     if message.text in menu_items:
         namaMenu = message.text
 
@@ -212,64 +181,66 @@ async def kb_pesanmenu(message: types.Message, state: FSMContext):
                 break
 
         await MyStates.FOURTH_STATE.set()
-        await message.reply(f"Kamu pesan {namaMenu}, mau berapa porsi?", reply_markup=keyboardjmlmenu)
+        await message.reply(f"Kamu pesan {namaMenu} ya kak, mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
     else:
         await state.finish()
-        await message.reply("Oke kak siap terima kasih ini notanya ya, silahkan ke kasir untuk membayar")
+        sudahAnswer = "Oke kak siap terima kasih ini notanya ya, silahkan ke kasir untuk membayar"
+        await message.reply(sudahAnswer)
         
 ### Fungsi input jumlah menu pesanan
 @dp.message_handler(state=MyStates.FOURTH_STATE)
-async def kb_jmlmenu(message: types.Message, state: FSMContext):
+async def input_order_quantity(message: types.Message, state: FSMContext):
     global varTransaksi
-    await message.answer("Okeeee")
+    await message.answer("Okay siap kak!")
     idTransaksi = varTransaksi
     print("Ini idTransaksi: ", idTransaksi)
 
-    if message.text == "1":
+    if message.text in ["1", "2", "3"]:
         qty = message.text
         await state.set_state(state=MyStates.THIRD_STATE)
-        await message.reply("Pesan apa lagi kak?, kalo udah tekan tombol di bawah ini ya kak", reply_markup=keyboardmenu)
-    elif message.text == "2":
-        qty = message.text
-        await state.set_state(state=MyStates.THIRD_STATE)
-        await message.reply("Pesan apa lagi kak?, kalo udah tekan tombol di bawah ini ya kak", reply_markup=keyboardmenu)
-    elif message.text == "3":
-        qty = message.text
-        await state.set_state(state=MyStates.THIRD_STATE)
-        await message.reply("Pesan apa lagi kak?, kalo udah tekan tombol di bawah ini ya kak", reply_markup=keyboardmenu)
-    
+        await message.reply("Apakah ada yang mau dipesan lagi kak? Kalo udah silahkan tekan tombol sudahnya ya kak", reply_markup=keyboardmenu)
 
-    global varidmenu
-    urlpesan = "http://localhost:3000/transaksi/postPesanan"
-    idtransaksi = idTransaksi
-    idmenu = varidmenu
-    quantity = qty
+        urlpesan = f"{API_BASE_URL}/transaksi/postPesanan"
+        idtransaksi = idTransaksi
+        idmenu = varidmenu
+        quantity = qty
 
-    body = {
-        "idTransaksi": idtransaksi,
-        "idMenu": int(idmenu),
-        "qty": int(quantity)
+        body = {
+            "idTransaksi": idtransaksi,
+            "idMenu": int(idmenu),
+            "qty": int(quantity)
         }
 
-    responsepesan = requests.post(urlpesan, json=body)
-    if responsepesan.status_code == 200:
-        data = json.loads(responsepesan.text)
-        print(data) 
+        responsepesan = requests.post(urlpesan, json=body)
+        if responsepesan.status_code == 200:
+            data = json.loads(responsepesan.text)
+            print(data) 
+        else:
+            print(f"Error: {responsepesan.status_code}")
+            print(f"Error: {responsepesan.text}")
     else:
-        print(f"Error: {responsepesan.status_code}")
-        print(f"Error: {responsepesan.text}")
+        await state.finish()
+        sudahAnswer = "Oke kak siap terima kasih ini notanya ya, silahkan ke kasir untuk membayar"
+        await message.reply(sudahAnswer)
 
-### NLP
+### NLP Mode
 @dp.message_handler()
-async def convo(message: types.Message):
-    jawabconvo = chat_anwser(message["text"])
-    print(jawabconvo)
-    print(message)
-    await message.answer(jawabconvo)
+async def chat_response(message: types.Message):
+    try:
+        jawabConvo = chat_answer(message.text)
+        print(jawabConvo)
+        print(message)
+        await message.answer(jawabConvo)
+    except Exception as e:
+        traceback.print_exc()
+        error_message = "Terjadi kesalahan saat memproses pesan"
+        await message.answer(error_message)
 
 if __name__ == '__main__':
     try:
         executor.start_polling(dispatcher=dp, skip_updates=True)
-    
+        logger.info("Bot dijalankan")
     except Exception as error:
+        traceback.print_exc()
         print('Cause: {}'.format(error))
+        logger.exception(f"Pesan kesalahan: {error}")
