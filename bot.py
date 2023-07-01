@@ -11,7 +11,7 @@ from menu import responsemenu
 import json
 import requests
 import traceback
-from config import TOKEN, RESTAURANT_ID, API_BASE_URL
+from config import TOKEN, RESTAURANT_ID, API_BASE_URL, info_chatbot
 
 # Konfigurasi logger
 logging.basicConfig(
@@ -87,7 +87,7 @@ for i in range(1, max_menu+1):
 async def start(message: types.Message):
     try:
         logger.info(f"User {message.from_user.username} memulai chat")
-        start_answer = "Halo! Selamat datang, sekarang kamu sedang berada di Mode Chatting dari chatbot ini. Disini kamu bisa tanya-tanya apapun! asal masih ada hubungannya sama restoran ini ya :D"
+        start_answer = "Halo! Selamat datang, sekarang kamu sedang berada di Mode Chatting dari chatbot ini. Disini kamu bisa tanya-tanya apapun! asal masih ada hubungannya sama restoran ini ya! Oiya jangan lupa untuk pencet tombol /info terlebih dahulu agar tau cara pake chatbot ini ya! Have fun!"
         print(start_answer)
         await message.answer(start_answer)
     except Exception as e:
@@ -105,6 +105,16 @@ async def show_menu(message: types.Message):
     except Exception as e:
         traceback.print_exc()
         error_message = "Terjadi kesalahan saat menampilkan menu"
+        await message.answer(error_message)
+
+### Menampilkan Menu lewat commands di NLP Mode
+@dp.message_handler(commands="info")
+async def show_info(message: types.Message):
+    try:
+        await message.answer(info_chatbot)
+    except Exception as e:
+        traceback.print_exc()
+        error_message = "Terjadi kesalahan saat menampilkan info"
         await message.answer(error_message)
 
 ### Awalan untuk mulai memesan makanan di Mode Pemesanan

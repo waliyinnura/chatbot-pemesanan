@@ -7,10 +7,11 @@ from nltk.stem import WordNetLemmatizer
 from tensorflow.python.keras.layers import Dense, Dropout
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+from tensorflow.python.keras.models import save_model
 from patterns import responsepatterns
 import matplotlib.pyplot as plt
 
-def train():
+def trains():
     # Preprocessing
     lemmatizer = WordNetLemmatizer()
     intents = json.loads(responsepatterns.text)
@@ -83,6 +84,8 @@ def train():
 
     try:
         hist = model.fit(np.array(train_x), np.array(train_y), epochs=800, batch_size=5, verbose=1)
+        model.save("chatbot_model.h5")
+        print("Model saved as chatbot_model.h5")
     except Exception as e:
         print("Terjadi kesalahan saat melatih model:", str(e))
 
@@ -112,4 +115,4 @@ def train():
         print("Pelatihan selesai!")
     else:
         print("Pelatihan model gagal.")
-#train()
+trains()

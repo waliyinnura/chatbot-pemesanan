@@ -7,7 +7,7 @@ from nltk.stem import WordNetLemmatizer
 from tensorflow.python.keras.models import load_model
 
 from patterns import responsepatterns
-from train import train
+from train import trains
 
 lemmatizer = WordNetLemmatizer()
 intents1 = json.loads(responsepatterns.text)
@@ -40,13 +40,17 @@ def bag_words(sentences):
 def pre_class(sentence):
     bow = bag_words(sentence)
     res = model.predict(numpy.array([bow]))[0]
-    ERROR_THRESHOLD = 0.25
+    ERROR_THRESHOLD = 0.75
     results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
     results.sort(key=lambda x: x[1], reverse=True)
+    print('result =', results)
     return_list = []
     for r in results:
         return_list.append({'intent': classes[r[0]], 'probability': str(r[1])})
+        print('class =', classes[r[0]])
+        print('probability', str(r[1]))
     return return_list
+
 
 def get_answer(intents_list1, intents_json):
     tag = intents_list1[0]['intent']
@@ -55,10 +59,17 @@ def get_answer(intents_list1, intents_json):
         print('tag =', i['tag'])
         if i['tag'] == tag:
             return random.choice(i['response'])
+    # Tidak ada kecocokan tag, kembalikan None
+    return None
+
 
 def chat_answer(message):
     ints = pre_class(message)
-    return get_answer(ints, intents1)
+    if ints:
+        answer = get_answer(ints, intents1)
+        if answer:
+            return answer
+    return "Maaf, saya tidak dapat memahami pertanyaan tersebut."
 
 def main_chat():
     print("Me : ")
@@ -70,5 +81,5 @@ def main_chat():
         print(res)
 
 if __name__ == '__main__':
-    #train()
+    #trains()
     main_chat()
