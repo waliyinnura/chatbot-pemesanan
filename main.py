@@ -4,6 +4,7 @@ import random
 import nltk
 import numpy
 from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import WordPunctTokenizer
 from tensorflow.python.keras.models import load_model
 
 from patterns import responsepatterns
@@ -24,8 +25,9 @@ except Exception as e:
     exit()
 
 def clean_up_sentence(sentence):
-    sen_words = nltk.word_tokenize(sentence)
-    sen_words = [lemmatizer.lemmatize(word.lower()) for word in sen_words]
+    tokenizer = WordPunctTokenizer()
+    sen_words = tokenizer.tokenize(sentence.lower())
+    sen_words = [lemmatizer.lemmatize(word) for word in sen_words]
     return sen_words
 
 def bag_words(sentences):
@@ -40,7 +42,7 @@ def bag_words(sentences):
 def pre_class(sentence):
     bow = bag_words(sentence)
     res = model.predict(numpy.array([bow]))[0]
-    ERROR_THRESHOLD = 0.75
+    ERROR_THRESHOLD = 0.8
     results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
     results.sort(key=lambda x: x[1], reverse=True)
     print('result =', results)
