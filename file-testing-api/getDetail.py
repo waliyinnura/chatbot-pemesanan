@@ -2,7 +2,6 @@ import requests
 import json
 
 urlgetdetail = "http://localhost:3000/transaksi/getDetailTransaksi"
-
 bodygetdetail = {
             "idTransaksi": 155
         }

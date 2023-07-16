@@ -71,7 +71,7 @@ def chat_answer(message):
         answer = get_answer(ints, intents1)
         if answer:
             return answer
-    return "Maaf, saya tidak dapat memahami pertanyaan tersebut."
+    return "Maaf, aku gatau harus jawab apa dari pertanyaan kamu"
 
 def main_chat():
     print("Me : ")
@@ -83,5 +83,5 @@ def main_chat():
         print(res)
 
 if __name__ == '__main__':
-    #trains()
+    # trains()
     main_chat()

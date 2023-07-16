@@ -35,6 +35,8 @@ class MyStates(StatesGroup):
     inputEditPesanan = State()
     qtyEditPesanan = State()
     cancelPesanan = State()
+    deleteMenu = State()
+    verifDeleteMenu = State()
 
 # Ambil gambar menu dari API
 urlgmenu = f"{API_BASE_URL}/restoran/image"
@@ -71,12 +73,17 @@ responsemenu = requests.post(urlmenu, json=body)
 data = json.loads(responsemenu.text)
 menu_items = [item['nama'] for item in data['data']]
 
+## Barisan tombol-tombol
 buttonCancel = KeyboardButton("cancel")
 buttonEdit = KeyboardButton("edit")
 buttonsudah = KeyboardButton("sudah")
+buttonDelete = KeyboardButton("delete")
+buttonTidakJadi = KeyboardButton("tidak jadi")
+
 keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     *[KeyboardButton(item) for item in menu_items],
     buttonEdit,
+    buttonDelete,
     buttonCancel,
     buttonsudah
 )
@@ -84,6 +91,12 @@ keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 ## Tombol edit menu pesanan
 keyboardmenuedit = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     *[KeyboardButton(item) for item in menu_items]
+)
+
+## Tombol delete menu pesanan
+keyboardDeleteMenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
+    *[KeyboardButton(item) for item in menu_items],
+    buttonTidakJadi
 )
 
 # Ambil jumlah maksimal menu pesanan dari variabel
@@ -98,8 +111,11 @@ for i in range(1, max_menu+1):
 ### Awalan akan ke NLP Mode
 @dp.message_handler(Command("start"))
 async def start(message: types.Message):
+    username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
     try:
-        logger.info(f"User {message.from_user.username} memulai chat")
+        logger.info(f"User {username} memulai chat")
         start_answer = "Halo! Selamat datang, sekarang kamu sedang berada di Mode Chatting dari chatbot ini. Disini kamu bisa tanya-tanya apapun! asal masih ada hubungannya sama restoran ini ya! Oiya jangan lupa untuk pencet tombol /info terlebih dahulu agar tau cara pake chatbot ini ya! Have fun!"
         print(start_answer)
         await message.answer(start_answer)
@@ -148,9 +164,11 @@ varTransaksi = ""
 ### Fungsi tombol input nomor meja
 @dp.message_handler(state=MyStates.awalPesan)
 async def input_table_number(message: types.Message, state: FSMContext):
-    logger.info(f"User {message.from_user.username} memilih nomor meja {message.text}")
-    urlmeja = f"{API_BASE_URL}/transaksi/postTransaksi"
     username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
+    logger.info(f"User {username} memilih nomor meja {message.text}")
+    urlmeja = f"{API_BASE_URL}/transaksi/postTransaksi"
     nomorMeja = message.text
     print(nomorMeja)
     body = {
@@ -167,6 +185,7 @@ async def input_table_number(message: types.Message, state: FSMContext):
         print("Ini idTransaksi: ", varTransaksi)
         
     else:
+        await state.set_state(state=MyStates.awalPesan)
         print(f"Error: {responsemeja.status_code}")
         print(f"Error: {responsemeja.text}")
     
@@ -187,7 +206,10 @@ varidmenu = ""
 ### Fungsi tombol input menu pesanan
 @dp.message_handler(state=MyStates.inputPesanan)
 async def input_order_menu(message: types.Message, state: FSMContext):
-    logger.info(f"User {message.from_user.username} memesan menu {message.text}")
+    username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
+    logger.info(f"User {username} memesan menu {message.text}")
     global varTransaksi
     global varidmenu
     idTransaksi = varTransaksi
@@ -220,12 +242,15 @@ async def input_order_menu(message: types.Message, state: FSMContext):
     elif message.text == "edit":
         await MyStates.editPesanan.set()
         await message.answer("Menu mana kak yang mau di edit?", reply_markup=keyboardmenuedit)
+    elif message.text == "delete":
+        await MyStates.deleteMenu.set()
+        await message.answer("Menu mana kak yang mau di delete?", reply_markup=keyboardDeleteMenu)
     elif message.text == "cancel":
         if varTransaksi is not None:
             urlcancel = f"{API_BASE_URL}/transaksi/cancel"
             bodycancel = {
                     "idTransaksi": varTransaksi,
-                    "username": message.from_user.username
+                    "username": username
                 }
             responsecancel = requests.post(urlcancel, json=bodycancel)
             if responsecancel.status_code == 200:
@@ -241,7 +266,7 @@ async def input_order_menu(message: types.Message, state: FSMContext):
             await message.answer("Oke kak tapi kamu belom ada transaksi apapun. Klik /pesan kalo mau pesan sesuatu ya kak")
     elif message.text == "sudah":
         await state.finish()
-        sudahAnswer = f"Oke kak siap terima kasih ini notanya ya, silahkan ke kasir untuk membayar\n\nID Pelanggan: {message.from_user.username}\nID Transaksi: {idTransaksi}\n\n"
+        sudahAnswer = f"Oke kak siap terima kasih ini notanya ya, silahkan ke kasir untuk membayar\n\nID Pelanggan: {username}\nID Transaksi: {idTransaksi}\n\n"
         for item in datagetdetail['data']:
             # idMenu = item["idMenu"] #Belom tau dibutuhin apa gak
             nama = item["nama"]
@@ -266,7 +291,10 @@ varidDetail = ""
 ### Fungsi tombol edit pesanan
 @dp.message_handler(state=MyStates.editPesanan)
 async def edit_order_menu(message: types.Message, state: FSMContext):
-    logger.info(f"User {message.from_user.username} meminta untuk edit pesanan {message.text}")
+    username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
+    logger.info(f"User {username} meminta untuk edit pesanan {message.text}")
     global varTransaksi
     global varidmenu
     global varidDetail
@@ -315,7 +343,10 @@ qty = ""
 ### Fungsi input edit pesanan
 @dp.message_handler(state=MyStates.inputEditPesanan)
 async def input_order_menu(message: types.Message, state: FSMContext):
-    logger.info(f"User {message.from_user.username} edit pesanan menjadi {message.text}")
+    username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
+    logger.info(f"User {username} edit pesanan menjadi {message.text}")
     global varTransaksi
     global varidmenu
     global varidDetail
@@ -480,6 +511,56 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
     else:
         await state.set_state(state=MyStates.orderQty)
         await message.reply(f"Maaf kak mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
+
+### Fungsi delete menu
+@dp.message_handler(state=MyStates.deleteMenu)
+async def input_order_menu(message: types.Message, state: FSMContext):
+    username = message.from_user.username
+    if username is None:
+        username = message.from_user.first_name
+    logger.info(f"User {username} ingin menghapus {message.text}")
+    global varTransaksi
+    # await message.answer("Oke siap kak!")
+    idTransaksi = varTransaksi
+    print("Ini idTransaksi: ", idTransaksi)
+
+    urlgetdetail = f"{API_BASE_URL}/transaksi/getDetailTransaksi"
+    bodygetdetail = {
+            "idTransaksi": idTransaksi
+        }
+    
+    responsegetdetail = requests.post(urlgetdetail, json=bodygetdetail)
+    if responsegetdetail.status_code == 200:
+        datagetdetail = json.loads(responsegetdetail.text)
+    else:
+        print(f"Error: {responsegetdetail.status_code}")
+        print(f"Error: {responsegetdetail.text}")
+
+    namaMenu = [item['nama'] for item in datagetdetail['data']]
+    if message.text in namaMenu:
+        res = datagetdetail["data"]
+        for r in res:
+            if r["nama"] == message.text:
+                varidDetail = r["idDetailTransaksi"]
+                print("Ini idDetailTransaksi: ", varidDetail)
+
+                urlDelete = f"{API_BASE_URL}/transaksi/deleteDetailPesanan"
+                bodyDelete = {
+                        "idDetailTransaksi": varidDetail
+                    }
+
+                responseDelete = requests.post(urlDelete, json=bodyDelete)
+                json.loads(responseDelete.text)
+                break
+
+        await state.set_state(state=MyStates.inputPesanan)
+        await message.reply(f"Oke kak, kamu delete {message.text} ya kak. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
+    elif message.text == "tidak jadi":
+        await state.set_state(state=MyStates.inputPesanan)
+        await message.reply(f"Oke kak siap. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
+    else:
+        await state.set_state(state=MyStates.deleteMenu)
+        await message.reply(f"Maaf kak kamu salah input, Kamu mau delete menu yang mana kak?", reply_markup=keyboardDeleteMenu)
 
 ### NLP Mode
 @dp.message_handler()

@@ -44,7 +44,7 @@ def trains():
 
     # Membangun kamus kata dengan frekuensi
     word_counts = defaultdict(int, word_counts)
-
+    
     # Menyimpan kamus kata dan kelas
     pickle.dump(words, open("datas/words.pkl", "wb"))
     pickle.dump(classes, open("datas/classes.pkl", "wb"))
@@ -62,29 +62,37 @@ def trains():
         out_row = list(out)
         out_row[classes.index(doc[1])] = 1
         training.append([bag, out_row])
-
+        
     np.random.shuffle(training)
     training = np.array(training)
-
     train_x = list(training[:, 0])
     train_y = list(training[:, 1])
 
+    # print("train x: ", train_x)
+    # print("train y: ", train_y)
+    # exit()
+    # print("val x: ", val_x)
+    # print("val y: ", val_y)
+
     # Model Neural Network
     model = Sequential()
-    model.add(Dense(128, input_shape=(len(train_x[0]),), activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(Dense(208, input_shape=(len(train_x[0]),), activation='relu'))
+    # print(len(train_x[0]))
+    model.add(Dropout(0.2))
+    model.add(Dense(104))
+    model.add(Dense(52, activation='relu'))
+    # model.add(Dropout(0.4))
 
     # Jumlah neuron output disesuaikan dengan jumlah kelas (classes)
     model.add(Dense(len(classes), activation='softmax'))
-
+    # print(len(classes))
+    # exit()
     sgd = SGD(learning_rate=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # membuat model dan save model
     try:
-        hist = model.fit(np.array(train_x), np.array(train_y), epochs=800, batch_size=5, verbose=1)
+        hist = model.fit(np.array(train_x), np.array(train_y), epochs=420, batch_size=26, verbose=1)
         model.save("chatbot_model.h5")
         print("Model saved as chatbot_model.h5")
     except Exception as e:
@@ -116,4 +124,4 @@ def trains():
         print("Pelatihan selesai!")
     else:
         print("Pelatihan model gagal.")
-# trains()
+trains()

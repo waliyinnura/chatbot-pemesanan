@@ -9,7 +9,7 @@ responsepatterns = requests.post(urlpatterns, json=body)
 
 if responsepatterns.status_code == 200:
     data = json.loads(responsepatterns.text)
-    print(data)
+    # print(data)
     # name = data['name']
     # premiered = data['premiered']
     # summary = data['summary']
