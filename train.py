@@ -10,6 +10,111 @@ from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from tensorflow.python.keras.models import save_model
 from patterns import responsepatterns
 import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report
+
+# normalized_docs = []
+# test_docs = [
+#         (["saya", "ingin", "memesan"], "pesan"),
+#         (["lihat", "menu", "makanan"], "gambarMenu"),
+#         (["saya", "ingin", "membayar"], "pembayaran"),
+#         # ([], "terimaKasih"),
+#         # ([], "greetingsPagi"),
+#         # ([], "greetingsSiang"),
+#         # ([], "greetingsSore"),
+#         # ([], "greetingsMalam"),
+#         # ([], "greetingsMuslim"),
+#         # ([], "greetingsKatolik"),
+#         # ([], "greetingsProtestan"),
+#         # ([], "greetingsHindu"),
+#         # ([], "greetingsKhonghucu"),
+#         # ([], "greetingsBuddha"),
+#         # ([], "menuRekomendasi")
+#     ]
+
+def evaluate_model(model, words, classes, word_counts, normalized_docs):
+    test_docs = [
+        (["saya", "ingin", "memesan"], "pesan"),
+        (["lihat", "menu", "makanan"], "gambarMenu"),
+        (["saya", "ingin", "membayar"], "pembayaran"),
+        (["terima", "kasih"], "terimaKasih"),
+        (["selamat", "pagi"], "greetingsPagi"),
+        (["selamat", "siang"], "greetingsSiang"),
+        (["selamat", "sore"], "greetingsSore"),
+        (["selamat", "malam"], "greetingsMalam"),
+        (["assalamualaikum"], "greetingsMuslim"),
+        (["salam", "sejahtera"], "greetingsKatolik"),
+        (["shalom"], "greetingsProtestan"),
+        (["om", "swastiyastu"], "greetingsHindu"),
+        (["wei", "de", "dong", "tian"], "greetingsKhonghucu"),
+        (["namo", "buddhaya"], "greetingsBuddha"),
+        (["apa", "menu", "rekomendasi", "disini"], "menuRekomendasi"),
+        (["apakah", "makanan", "disini", "halal"], "makananHalal"),
+        (["saran", "makanan", "favorit"], "makananSignature"),
+        (["makanan", "untuk", "vegan"], "menuVegan"),
+        (["menyiapkan", "makanannya"], "waktuPemesanan"),
+        (["kapan", "restoran", "buka", "bro"], "jamOperasional"),
+        (["apakah", "makanan", "disini", "boleh", "dibungkus"], "takeAway"),
+        (["sarankan", "makanan", "untuk", "anak"], "menuAnak"),
+        (["makanan", "yang", "cocok", "untuk", "keluarga"], "hidanganKelompok"),
+        (["kapan", "dianternya", "nih"], "lamaMenunggu"),
+        (["halo", "bro"], "greetings"),
+        (["ayam", "bakar", "taliwang"], "menu"),
+        # Variasi tambahan
+        (["bagaimana", "cara", "pesan"], "pesan"),
+        (["tampilkan", "daftar", "menu"], "gambarMenu"),
+        (["bagaimana", "membayar", "pesanan"], "pembayaran"),
+        (["terima", "kasih", "sekali"], "terimaKasih"),
+        (["hai", "pagi"], "greetingsPagi"),
+        (["hai", "siang"], "greetingsSiang"),
+        (["hai", "sore"], "greetingsSore"),
+        (["selamat", "malam", "juga"], "greetingsMalam"),
+        (["hai", "kak", "apa", "kabar"], "greetingsMuslim"),
+        (["selamat", "sejahtera", "juga"], "greetingsKatolik"),
+        (["hello"], "greetingsProtestan"),
+        (["om", "swastiyastu", "juga"], "greetingsHindu"),
+        (["wei", "de", "dong", "tian", "juga"], "greetingsKhonghucu"),
+        (["namo", "buddhaya", "juga"], "greetingsBuddha"),
+        (["rekomendasi", "apa", "yang", "terbaik"], "menuRekomendasi"),
+        (["adakah", "menu", "halal"], "makananHalal"),
+        (["menu", "favorit", "apa", "yang", "kamu", "sarankan"], "makananSignature"),
+        (["saya", "vegan"], "menuVegan"),
+        (["berapa", "lama", "pesanan", "siap"], "waktuPemesanan"),
+        (["jam", "operasional", "restoran"], "jamOperasional"),
+        (["bisakah", "saya", "mengambil", "pesanan"], "takeAway"),
+        (["menu", "apa", "yang", "cocok", "untuk", "anak-anak"], "menuAnak"),
+        (["menu", "kelompok", "apa", "yang", "kamu", "sugestikan"], "hidanganKelompok"),
+        (["berapa", "lama", "waktu", "pengantaran"], "lamaMenunggu"),
+        (["hai", "bro"], "greetings"),
+        (["pesen", "ayam", "bakar", "taliwang"], "menu")
+    ]
+
+    test_x = []
+    test_y = []
+    out = [0] * len(classes)
+
+    for doc in test_docs:
+        bag = []
+        word_patterns = doc[0]
+        for word in words:
+            bag.append(word_counts[word]) if word in word_patterns else bag.append(0)
+        out_row = list(out)
+        out_row[classes.index(doc[1])] = 1
+        test_x.append(bag)
+        test_y.append(out_row)
+
+    test_x = np.array(test_x)
+    test_y = np.array(test_y)
+
+    predictions = model.predict(test_x)
+    predicted_labels = [classes[np.argmax(prediction)] for prediction in predictions]
+    actual_labels = [classes[np.argmax(label)] for label in test_y]
+
+    report = classification_report(actual_labels, predicted_labels)
+    print("Laporan Evaluasi Out-of-Sample:")
+    # print("test_x: ", test_x)
+    # print("test_y: ", test_y)
+    # exit()
+    print(report)
 
 def trains():
     # Preprocessing
@@ -76,11 +181,11 @@ def trains():
 
     # Model Neural Network
     model = Sequential()
-    model.add(Dense(208, input_shape=(len(train_x[0]),), activation='relu'))
+    model.add(Dense(256, input_shape=(len(train_x[0]),), activation='relu'))
     # print(len(train_x[0]))
     model.add(Dropout(0.2))
-    model.add(Dense(104))
-    model.add(Dense(52, activation='relu'))
+    model.add(Dense(128))
+    model.add(Dense(64, activation='relu'))
     # model.add(Dropout(0.4))
 
     # Jumlah neuron output disesuaikan dengan jumlah kelas (classes)
@@ -92,7 +197,7 @@ def trains():
     
     # membuat model dan save model
     try:
-        hist = model.fit(np.array(train_x), np.array(train_y), epochs=420, batch_size=26, verbose=1)
+        hist = model.fit(np.array(train_x), np.array(train_y), epochs=378, batch_size=32, verbose=1)
         model.save("chatbot_model.h5")
         print("Model saved as chatbot_model.h5")
     except Exception as e:
@@ -122,6 +227,12 @@ def trains():
         print("Rata-rata loss (Training):", avg_loss)
 
         print("Pelatihan selesai!")
+
+        evaluate_model(model, words, classes, word_counts, normalized_docs)
+        # print(test_docs)
+        # print(normalized_docs)
     else:
-        print("Pelatihan model gagal.")
-trains()
+        print("Pelatihan Model Gagal!")
+
+if __name__ == "__main__":
+    trains()

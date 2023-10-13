@@ -3,6 +3,7 @@ import pickle
 import random
 import nltk
 import numpy
+import re
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import WordPunctTokenizer
 from tensorflow.python.keras.models import load_model
@@ -27,8 +28,12 @@ except Exception as e:
 def clean_up_sentence(sentence):
     tokenizer = WordPunctTokenizer()
     sen_words = tokenizer.tokenize(sentence.lower())
-    sen_words = [lemmatizer.lemmatize(word) for word in sen_words]
-    return sen_words
+    
+    # Normalisasi kata dengan menghilangkan karakter berulang
+    normalized_words = [re.sub(r'(.)\1+', r'\1', word) for word in sen_words]
+    
+    normalized_words = [lemmatizer.lemmatize(word) for word in normalized_words]
+    return normalized_words
 
 def bag_words(sentences):
     sen_words = clean_up_sentence(sentences)
@@ -42,7 +47,7 @@ def bag_words(sentences):
 def pre_class(sentence):
     bow = bag_words(sentence)
     res = model.predict(numpy.array([bow]))[0]
-    ERROR_THRESHOLD = 0.8
+    ERROR_THRESHOLD = 0.25
     results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
     results.sort(key=lambda x: x[1], reverse=True)
     print('result =', results)
@@ -63,7 +68,6 @@ def get_answer(intents_list1, intents_json):
             return random.choice(i['response'])
     # Tidak ada kecocokan tag, kembalikan None
     return None
-
 
 def chat_answer(message):
     ints = pre_class(message)

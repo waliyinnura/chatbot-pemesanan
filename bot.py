@@ -79,18 +79,21 @@ buttonEdit = KeyboardButton("edit")
 buttonsudah = KeyboardButton("sudah")
 buttonDelete = KeyboardButton("delete")
 buttonTidakJadi = KeyboardButton("tidak jadi")
+buttonCekNota = KeyboardButton("cek nota")
 
 keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     *[KeyboardButton(item) for item in menu_items],
     buttonEdit,
     buttonDelete,
     buttonCancel,
+    buttonCekNota,
     buttonsudah
 )
 
 ## Tombol edit menu pesanan
 keyboardmenuedit = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
-    *[KeyboardButton(item) for item in menu_items]
+    *[KeyboardButton(item) for item in menu_items],
+    buttonTidakJadi
 )
 
 ## Tombol delete menu pesanan
@@ -164,34 +167,38 @@ varTransaksi = ""
 ### Fungsi tombol input nomor meja
 @dp.message_handler(state=MyStates.awalPesan)
 async def input_table_number(message: types.Message, state: FSMContext):
-    username = message.from_user.username
-    if username is None:
-        username = message.from_user.first_name
-    logger.info(f"User {username} memilih nomor meja {message.text}")
-    urlmeja = f"{API_BASE_URL}/transaksi/postTransaksi"
-    nomorMeja = message.text
-    print(nomorMeja)
-    body = {
-        "username": username,
-        "nomorMeja": int(nomorMeja),
-        "idRestoran": RESTAURANT_ID
-    }
-    
-    global varTransaksi
-    responsemeja = requests.post(urlmeja, json=body)
-    if responsemeja.status_code == 200:
-        transaksi = json.loads(responsemeja.text)
-        varTransaksi = transaksi["data"]["idTransaksi"]
-        print("Ini idTransaksi: ", varTransaksi)
-        
+    if message.text in [str(i) for i in range(1, max_menu + 1)]:
+        username = message.from_user.username
+        if username is None:
+            username = message.from_user.first_name
+        logger.info(f"User {username} memilih nomor meja {message.text}")
+        urlmeja = f"{API_BASE_URL}/transaksi/postTransaksi"
+        nomorMeja = message.text
+        print(nomorMeja)
+        body = {
+            "username": username,
+            "nomorMeja": int(nomorMeja),
+            "idRestoran": RESTAURANT_ID
+        }
+
+        global varTransaksi
+        responsemeja = requests.post(urlmeja, json=body)
+        if responsemeja.status_code == 200:
+            transaksi = json.loads(responsemeja.text)
+            varTransaksi = transaksi["data"]["idTransaksi"]
+            print("Ini idTransaksi: ", varTransaksi)
+
+        else:
+            await state.set_state(state=MyStates.awalPesan)
+            print(f"Error: {responsemeja.status_code}")
+            print(f"Error: {responsemeja.text}")
+
+        meja_response = f"Oke, kamu di meja nomor {nomorMeja} ya, tekan tombol /menu ini untuk menampilkan menunya atau ketik   apapun untuk lanjut ke langkah selanjutnya"
+        await MyStates.tampilMenu.set()
+        await message.reply(meja_response)
     else:
         await state.set_state(state=MyStates.awalPesan)
-        print(f"Error: {responsemeja.status_code}")
-        print(f"Error: {responsemeja.text}")
-    
-    meja_response = f"Oke, kamu di meja nomor {nomorMeja} ya, tekan tombol /menu ini untuk menampilkan menunya atau ketik apapun untuk lanjut ke langkah selanjutnya"
-    await MyStates.tampilMenu.set()
-    await message.reply(meja_response)
+        await message.reply("Maaf kak engga ada nomor meja itu. kamu di meja berapa kak?", reply_markup=keyboardnomeja)
 
 ### Menampilkan Menu lewat state
 @dp.message_handler(state=MyStates.tampilMenu)
@@ -282,6 +289,24 @@ async def input_order_menu(message: types.Message, state: FSMContext):
         print(sudahAnswer)
         await message.reply(sudahAnswer)
         await message.answer("Kamu sudah kembali ke Mode Chatting lagi ya. Kalo ada yang mau ditanyain tanya aja")
+    elif message.text == "cek nota":
+            await state.set_state(state=MyStates.inputPesanan)
+            notaAnswer = f"Oke kak siap terima kasih ini notanya ya, jangan lupa klik tombol sudah dulu ya kak kalo udah selesai pesen.\n\nID Pelanggan: {username}\nID Transaksi: {idTransaksi}\n\n"
+            for item in datagetdetail['data']:
+                # idMenu = item["idMenu"] #Belom tau dibutuhin apa gak
+                nama = item["nama"]
+                qty = item["qty"]
+                harga = item["harga"]
+                subHarga = item["subHarga"]
+    
+                item_text = f"Nama: {nama}\nQty: {qty}\nHarga: {harga:,}\nSubharga: {subHarga:,}\n\n"
+                notaAnswer += item_text
+    
+            notaAnswer += f"Total: {datagetdetail['total']:,}\n\nAtau ada yang mau dipesan lagi? Silahkan dipilih ya kak"
+            print(idTransaksi)
+            print(notaAnswer)
+            await state.set_state(state=MyStates.inputPesanan)
+            await message.reply(notaAnswer, reply_markup=keyboardmenu)
     else:
         await state.set_state(state=MyStates.inputPesanan)
         await message.answer("Maaf kak menunya hanya yang ada di tombol saja ya. Jadi mau pesan apa nih kak?", reply_markup=keyboardmenu)
@@ -298,7 +323,7 @@ async def edit_order_menu(message: types.Message, state: FSMContext):
     global varTransaksi
     global varidmenu
     global varidDetail
-    await message.answer("Oke siap kak!")
+    # await message.answer("Oke siap kak!")
     idTransaksi = varTransaksi
     print("Ini idTransaksi: ", idTransaksi)
 
@@ -334,6 +359,9 @@ async def edit_order_menu(message: types.Message, state: FSMContext):
 
         await MyStates.inputEditPesanan.set()
         await message.reply(f"Kamu mau edit {namaMenu} jadi menu apa kak?", reply_markup=keyboardmenuedit)
+    elif message.text == "tidak jadi":
+        await state.set_state(state=MyStates.inputPesanan)
+        await message.answer(f"Oke kak siap. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
     else:
         await state.set_state(state=MyStates.editPesanan)
         await message.answer("Maaf kak kamu belom pesen itu, Menu mana kak yang mau di edit?", reply_markup=keyboardmenuedit)
@@ -393,7 +421,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
     global varTransaksi
     global varidmenu
     global qty
-    await message.answer("Okay siap kak!")
+    # await message.answer("Okay siap kak!")
     idTransaksi = varTransaksi
     print("Ini idTransaksi: ", idTransaksi)
 
@@ -446,7 +474,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
         await message.answer(noteAnswer)
     else:
         await state.set_state(state=MyStates.qtyEditPesanan)
-        await message.reply(f"Maaf kak mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
+        await message.reply("Maaf kak itu kebanyakan. Kalo mau lebih banyak bisa pesan 2 kali ya. Mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
 
 ### Fungsi input jumlah menu pesanan
 @dp.message_handler(state=MyStates.orderQty)
@@ -454,7 +482,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
     global varTransaksi
     global varidmenu
     global qty
-    await message.answer("Okay siap kak!")
+    # await message.answer("Okay siap kak!")
     idTransaksi = varTransaksi
     print("Ini idTransaksi: ", idTransaksi)
 
@@ -510,7 +538,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
         await message.answer(noteAnswer)
     else:
         await state.set_state(state=MyStates.orderQty)
-        await message.reply(f"Maaf kak mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
+        await message.reply("Maaf kak itu kebanyakan. Kalo mau lebih banyak bisa pesan 2 kali ya. Mau berapa porsi nih?", reply_markup=keyboardjmlmenu)
 
 ### Fungsi delete menu
 @dp.message_handler(state=MyStates.deleteMenu)
@@ -518,7 +546,7 @@ async def input_order_menu(message: types.Message, state: FSMContext):
     username = message.from_user.username
     if username is None:
         username = message.from_user.first_name
-    logger.info(f"User {username} ingin menghapus {message.text}")
+    logger.info(f"User {username} menghapus {message.text}")
     global varTransaksi
     # await message.answer("Oke siap kak!")
     idTransaksi = varTransaksi
@@ -554,7 +582,7 @@ async def input_order_menu(message: types.Message, state: FSMContext):
                 break
 
         await state.set_state(state=MyStates.inputPesanan)
-        await message.reply(f"Oke kak, kamu delete {message.text} ya kak. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
+        await message.reply(f"Oke kak, kamu delete {message.text} ya kak. Jangan lupa cek nota ya untuk mengecek apakah sudah sesuai atau belum oke? Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
     elif message.text == "tidak jadi":
         await state.set_state(state=MyStates.inputPesanan)
         await message.reply(f"Oke kak siap. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
