@@ -74,11 +74,11 @@ data = json.loads(responsemenu.text)
 menu_items = [item['nama'] for item in data['data']]
 
 ## Barisan tombol-tombol
-buttonCancel = KeyboardButton("cancel")
-buttonEdit = KeyboardButton("edit")
-buttonsudah = KeyboardButton("sudah")
-buttonDelete = KeyboardButton("delete")
-buttonTidakJadi = KeyboardButton("tidak jadi")
+buttonCancel = KeyboardButton("batal pesanan")
+buttonEdit = KeyboardButton("ubah pesanan")
+buttonsudah = KeyboardButton("selesai memesan")
+buttonDelete = KeyboardButton("hapus pesanan")
+buttonTidakJadi = KeyboardButton("tidak jadi memesan")
 buttonCekNota = KeyboardButton("cek nota")
 
 keyboardmenu = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
