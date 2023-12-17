@@ -83,7 +83,7 @@ menu_makanan = [item['nama'] for item in data['data'] if item['tipe'] == 'makana
 menu_minuman = [item['nama'] for item in data['data'] if item['tipe'] == 'minuman']
 
 ## Barisan tombol-tombol
-buttonCancel = KeyboardButton("batal pesanan")
+buttonCancel = KeyboardButton("batalkan pesanan")
 buttonEdit = KeyboardButton("ubah pesanan")
 buttonsudah = KeyboardButton("selesai memesan")
 buttonDelete = KeyboardButton("hapus salah satu menu")
@@ -276,13 +276,13 @@ async def input_order_menu(message: types.Message, state: FSMContext):
         await message.reply(f"Kamu pesan {namaMenu} ya kak, mau berapa porsi nih? *Tekan tombol yang tersedia atau ketik jumlah yang ingin dipesan", reply_markup=keyboardjmlmenu)
     elif message.text == "ubah pesanan":
         await MyStates.editPesanan.set()
-        await message.answer("Menu mana kak yang mau di edit? *Tekan tombol yang tersedia di bawah ini ya kak dan pastikan kakak sudah memesannya", reply_markup=keyboardmenuedit)
+        await message.answer("Menu mana kak yang mau di ubah? *Tekan tombol yang tersedia di bawah ini ya kak dan pastikan kakak sudah memesannya", reply_markup=keyboardmenuedit)
         await message.answer(noteAnswer)
     elif message.text == "hapus salah satu menu":
         await MyStates.deleteMenu.set()
         await message.answer("Menu mana kak yang mau di delete? *Tekan tombol yang tersedia di bawah ini ya kak dan pastikan kakak sudah memesannya", reply_markup=keyboardDeleteMenu)
         await message.answer(noteAnswer)
-    elif message.text == "batal pesanan":
+    elif message.text == "batalkan pesanan":
         if varTransaksi is not None:
             urlcancel = f"{API_BASE_URL}/transaksi/cancel"
             bodycancel = {
@@ -394,7 +394,7 @@ async def edit_order_menu(message: types.Message, state: FSMContext):
         await message.answer(f"Oke kak siap. Mau pesen apa lagi nih?", reply_markup=keyboardmenu)
     else:
         await state.set_state(state=MyStates.editPesanan)
-        await message.answer("Maaf kak kamu belom pesen itu, Menu mana kak yang mau di edit?", reply_markup=keyboardmenuedit)
+        await message.answer("Maaf kak kamu belom pesen itu, Menu mana kak yang mau di ubah?", reply_markup=keyboardmenuedit)
 
 qty = ""
 
@@ -458,7 +458,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
     if message.text in [str(i) for i in range(1, max_menu + 1)]:
         qty = message.text
         await state.set_state(state=MyStates.inputPesanan)
-        await message.reply("Apakah ada yang mau dipesan lagi kak? Kalo udah silahkan tekan tombol sudahnya ya kak", reply_markup=keyboardmenu)
+        await message.reply("Apakah ada yang mau dipesan lagi kak? Kalo udah silahkan tekan tombol selesai memesan ya kak", reply_markup=keyboardmenu)
         idmenu = varidmenu
         quantity = qty
         urleditpesanan = f"{API_BASE_URL}/transaksi/editPesanan"
@@ -519,7 +519,7 @@ async def input_order_quantity(message: types.Message, state: FSMContext):
     if message.text in [str(i) for i in range(1, max_menu + 1)]:
         qty = message.text
         await state.set_state(state=MyStates.inputPesanan)
-        await message.reply("Apakah ada yang mau dipesan lagi kak? Kalo udah silahkan tekan tombol sudahnya ya kak", reply_markup=keyboardmenu)
+        await message.reply("Apakah ada yang mau dipesan lagi kak? Kalo udah silahkan tekan tombol selesai memesan ya kak", reply_markup=keyboardmenu)
 
         urlpesan = f"{API_BASE_URL}/transaksi/postPesanan"
         idtransaksi = idTransaksi
