@@ -181,23 +181,23 @@ def trains():
 
     # Model Neural Network
     model = Sequential()
-    model.add(Dense(256, input_shape=(len(train_x[0]),), activation='relu'))
-    # print(len(train_x[0]))
+    model.add(Dense(264, input_shape=(len(train_x[0]),), activation='relu'))
+    print(len(train_x[0]))
     model.add(Dropout(0.2))
-    model.add(Dense(128))
-    model.add(Dense(64, activation='relu'))
+    model.add(Dense(132))
+    model.add(Dense(66, activation='relu'))
     # model.add(Dropout(0.4))
 
     # Jumlah neuron output disesuaikan dengan jumlah kelas (classes)
     model.add(Dense(len(classes), activation='softmax'))
-    # print(len(classes))
+    print(len(classes))
     # exit()
     sgd = SGD(learning_rate=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # membuat model dan save model
     try:
-        hist = model.fit(np.array(train_x), np.array(train_y), epochs=378, batch_size=32, verbose=1)
+        hist = model.fit(np.array(train_x), np.array(train_y), epochs=363, batch_size=33, verbose=1)
         model.save("chatbot_model.h5")
         print("Model saved as chatbot_model.h5")
     except Exception as e:
