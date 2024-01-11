@@ -86,6 +86,111 @@ def evaluate_model(model, words, classes, word_counts, normalized_docs):
         (["berapa", "lama", "waktu", "pengantaran"], "lamaMenunggu"),
         (["hai", "bro"], "greetings"),
         (["pesen", "ayam", "bakar", "taliwang"], "menu")
+        ##
+        # ([
+        #     "bagaimana", "cara", "mengajukan", "pesanan"
+        # ], "pesan"),
+        
+        # ([
+        #     "tunjukkan", "daftar", "hidangan"
+        # ], "gambarMenu"),
+        
+        # ([
+        #     "bagaimana", "melakukan", "pembayaran", "untuk", "pesanan"
+        # ], "pembayaran"),
+        
+        # ([
+        #     "terimakasih", "banyak"
+        # ], "terimaKasih"),
+        
+        # ([
+        #     "halo", "pagi"
+        # ], "greetingsPagi"),
+        
+        # ([
+        #     "selamat", "siang"
+        # ], "greetingsSiang"),
+        
+        # ([
+        #     "hai", "sore", "kak"
+        # ], "greetingsSore"),
+        
+        # ([
+        #     "selamat", "malam"
+        # ], "greetingsMalam"),
+        
+        # ([
+        #     "hai", "kakak", "apa", "kabar", "terkini"
+        # ], "greetingsMuslim"),
+        
+        # ([
+        #     "selamat", "sejahtera", "kak"
+        # ], "greetingsKatolik"),
+        
+        # ([
+        #     "hi", "there"
+        # ], "greetingsProtestan"),
+        
+        # ([
+        #     "om", "swastiyastu", "teman"
+        # ], "greetingsHindu"),
+        
+        # ([
+        #     "hei", "teman", "sembah", "sujud"
+        # ], "greetingsKhonghucu"),
+        
+        # ([
+        #     "namaste", "teman", "buddhis"
+        # ], "greetingsBuddha"),
+        
+        # ([
+        #     "mohon", "sarannya", "apa", "yang", "paling", "direkomendasikan"
+        # ], "menuRekomendasi"),
+        
+        # ([
+        #     "apakah", "ada", "makanan", "halal", "di", "sini"
+        # ], "makananHalal"),
+        
+        # ([
+        #     "hidangan", "favorit", "yang", "direkomendasikan", "apa"
+        # ], "makananSignature"),
+        
+        # ([
+        #     "saya", "mengikuti", "pola", "makan", "vegan"
+        # ], "menuVegan"),
+        
+        # ([
+        #     "berapa", "waktu", "persiapan", "pesanan"
+        # ], "waktuPemesanan"),
+        
+        # ([
+        #     "berapa", "jam", "operasional", "resto"
+        # ], "jamOperasional"),
+        
+        # ([
+        #     "bisakah", "saya", "mengambil", "makanan", "sendiri"
+        # ], "takeAway"),
+        
+        # ([
+        #     "menu", "apa", "yang", "cocok", "untuk", "anak-anak"
+        # ], "menuAnak"),
+        
+        # ([
+        #     "hidangan", "kelompok", "apa", "yang", "disarankan", "buat", "banyak", "orang"
+        # ], "hidanganKelompok"),
+        
+        # ([
+        #     "seberapa", "lama", "waktu", "pengantaran", "normalnya"
+        # ], "lamaMenunggu"),
+        
+        # ([
+        #     "halo", "brother"
+        # ], "greetings"),
+        
+        # ([
+        #     "pesan", "ayam", "bakar", "versi", "Taliwang"
+        # ], "menu")
+        
     ]
 
     test_x = []
@@ -181,11 +286,11 @@ def trains():
 
     # Model Neural Network
     model = Sequential()
-    model.add(Dense(264, input_shape=(len(train_x[0]),), activation='relu'))
+    model.add(Dense(272, input_shape=(len(train_x[0]),), activation='relu'))
     print(len(train_x[0]))
     model.add(Dropout(0.2))
-    model.add(Dense(132))
-    model.add(Dense(66, activation='relu'))
+    model.add(Dense(136))
+    model.add(Dense(68, activation='relu'))
     # model.add(Dropout(0.4))
 
     # Jumlah neuron output disesuaikan dengan jumlah kelas (classes)
@@ -197,7 +302,7 @@ def trains():
     
     # membuat model dan save model
     try:
-        hist = model.fit(np.array(train_x), np.array(train_y), epochs=363, batch_size=33, verbose=1)
+        hist = model.fit(np.array(train_x), np.array(train_y), epochs=340, batch_size=34, verbose=1)
         model.save("chatbot_model.h5")
         print("Model saved as chatbot_model.h5")
     except Exception as e:
